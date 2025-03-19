@@ -4,7 +4,7 @@ LangChain Challenge for improve skills
 
 ## Features
 
-### Text completion using FewShotTemplate
+### [Text completion using FewShotTemplate](notebooks/fewshot.ipynb)
 
 Generates detailed movie information, including:
 
@@ -15,7 +15,7 @@ Generates detailed movie information, including:
 - **Genre**
 - **Synopsis**
 
-### Implementing Completion with LCEL and Memory
+### [Implementing Completion with LCEL and Memory](notebooks/memory.ipynb)
 
 Provides AI-powered responses based on LCEL and memory
 
