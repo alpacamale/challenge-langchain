@@ -14,3 +14,10 @@ Generates detailed movie information, including:
 - **Box office revenue**
 - **Genre**
 - **Synopsis**
+
+### Implementing Completion with LCEL and Memory
+
+Provides AI-powered responses based on LCEL and memory
+
+- The AI responds with exactly **three emojis** representing the given movie title.
+- It remembers previous conversations using a memory buffer.
