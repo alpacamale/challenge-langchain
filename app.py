@@ -24,8 +24,7 @@ with st.sidebar:
 
     if api_key:
         os.environ["OPENAI_API_KEY"] = api_key
-
-llm = ChatOpenAI(temperature=0.1)
+        llm = ChatOpenAI(temperature=0.1)
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
@@ -52,60 +51,65 @@ splitter = CharacterTextSplitter.from_tiktoken_encoder(
     separator="\n",
 )
 
-file = st.file_uploader(type="txt", label="Upload your document!")
-if file is not None:
-    with st.status("Implement RAG..."):
-        st.write("Loading File...")
-        with open(f"files/{file.name}", "w", encoding="utf-8") as f:
-            f.write(file.read().decode("utf-8"))
-        loader = TextLoader(f"files/{file.name}")
-        st.write("Splitting into Chunks...")
-        docs = loader.load_and_split(text_splitter=splitter)
-        st.write("Embedding Chunks...")
-        embedding = OpenAIEmbeddings()
-        cached_embedding = CacheBackedEmbeddings.from_bytes_store(embedding, cache_dir)
-        st.write("Save to Vectorstore...")
-        vectorstore = FAISS.from_documents(docs, cached_embedding)
-        retriever = vectorstore.as_retriever()
+if api_key:
+    file = st.file_uploader(type="txt", label="Upload your document!")
+    if file is not None:
+        with st.status("Implement RAG..."):
+            st.write("Loading File...")
+            with open(f"files/{file.name}", "w", encoding="utf-8") as f:
+                f.write(file.read().decode("utf-8"))
+            loader = TextLoader(f"files/{file.name}")
+            st.write("Splitting into Chunks...")
+            docs = loader.load_and_split(text_splitter=splitter)
+            st.write("Embedding Chunks...")
+            embedding = OpenAIEmbeddings()
+            cached_embedding = CacheBackedEmbeddings.from_bytes_store(
+                embedding, cache_dir
+            )
+            st.write("Save to Vectorstore...")
+            vectorstore = FAISS.from_documents(docs, cached_embedding)
+            retriever = vectorstore.as_retriever()
 
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "You are a helpful assistant. Answer questions only using the following context. If you don't know the answer just say you don't know, don't make it up:\n{context}",
-            ),
-            MessagesPlaceholder(variable_name="history"),
-            ("human", "{question}"),
-        ]
-    )
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "You are a helpful assistant. Answer questions only using the following context. If you don't know the answer just say you don't know, don't make it up:\n{context}",
+                ),
+                MessagesPlaceholder(variable_name="history"),
+                ("human", "{question}"),
+            ]
+        )
 
-    chain = (
-        {
-            "context": retriever,
-            "question": RunnablePassthrough(),
-            "history": RunnableLambda(load_memory),
-        }
-        | prompt
-        | llm
-    )
+        chain = (
+            {
+                "context": retriever,
+                "question": RunnablePassthrough(),
+                "history": RunnableLambda(load_memory),
+            }
+            | prompt
+            | llm
+        )
 
-    def invoke_chain(question: str) -> str:
-        result = chain.invoke(question)
-        memory.save_context({"input": question}, {"output": result.content})
-        return result.content
+        def invoke_chain(question: str) -> str:
+            result = chain.invoke(question)
+            memory.save_context({"input": question}, {"output": result.content})
+            return result.content
 
-    def send_message(message, role):
-        with st.chat_message(role):
-            st.write(message)
+        def send_message(message, role):
+            with st.chat_message(role):
+                st.write(message)
 
-    for message in st.session_state["messages"]:
-        send_message(message["text"], message["role"])
+        for message in st.session_state["messages"]:
+            send_message(message["text"], message["role"])
 
-    question = st.chat_input("Ask about your document")
+        question = st.chat_input("Ask about your document")
 
-    if question:
-        send_message(question, "human")
-        completion = invoke_chain(question)
-        send_message(completion, "ai")
-        st.session_state["messages"].append({"text": question, "role": "human"})
-        st.session_state["messages"].append({"text": completion, "role": "ai"})
+        if question:
+            send_message(question, "human")
+            completion = invoke_chain(question)
+            send_message(completion, "ai")
+            st.session_state["messages"].append({"text": question, "role": "human"})
+            st.session_state["messages"].append({"text": completion, "role": "ai"})
+else:
+    st.warning("Write you api-key!")
