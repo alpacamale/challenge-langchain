@@ -26,6 +26,10 @@ with st.sidebar:
         os.environ["OPENAI_API_KEY"] = api_key
         llm = ChatOpenAI(temperature=0.1)
 
+    st.link_button(
+        label="Gihub Link", url="https://github.com/alpacamale/challenge-langchain"
+    )
+
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
