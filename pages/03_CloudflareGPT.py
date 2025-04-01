@@ -83,9 +83,7 @@ answers_prompt = ChatPromptTemplate.from_template(
 )
 
 
-def get_answers(inputs) -> dict:
-    docs = inputs["docs"]
-    question = inputs["question"]
+def get_answers(docs, question) -> dict:
     answers_chain = answers_prompt | llm
     return {
         "question": question,
@@ -150,19 +148,19 @@ def display_message(role: str, message: str):
         st.write(message)
 
 
-# class ChatCallbackHandler(BaseCallbackHandler):
-#     def __init__(self):
-#         self.message = ""
+class ChatCallbackHandler(BaseCallbackHandler):
+    def __init__(self):
+        self.message = ""
 
-#     def on_llm_start(self, *args, **kwargs):
-#         self.message_box = st.empty()
+    def on_llm_start(self, *args, **kwargs):
+        self.message_box = st.empty()
 
-#     def on_llm_new_token(self, token: str, *args, **kwargs):
-#         self.message += token
-#         self.message_box.markdown(self.message)
+    def on_llm_new_token(self, token: str, *args, **kwargs):
+        self.message += token
+        self.message_box.markdown(self.message)
 
-#     def on_llm_end(self, *args, **kwargs):
-#         add_history("ai", self.message)
+    def on_llm_end(self, *args, **kwargs):
+        self.message = ""
 
 
 title = "Cloudflare GPT"
@@ -175,12 +173,14 @@ st.set_page_config(
 st.title(title)
 st.markdown(
     """
-    Ask questions about the content of a website.
+    Ask anything about this website's content — including:
+
+    - **vectorize**
+    - **ai-gateway**
+    - **workers-ai**
     """
 )
 
-for message in st.session_state["messages"]:
-    display_message(message["role"], message["message"])
 
 url = "https://developers.cloudflare.com/sitemap-index.xml"
 
@@ -205,26 +205,21 @@ else:
     llm = ChatOpenAI(
         temperature=0.1,
         model="gpt-4o-mini",
-        # streaming=True,
-        # callbacks=[],
+        streaming=True,
+        callbacks=[ChatCallbackHandler()],
     )
     docs = load_website(url)
     with st.spinner("Embedding documents ..."):
         retriever = get_retriever(docs)
+    for message in st.session_state["messages"]:
+        display_message(message["role"], message["message"])
     query = st.chat_input("Ask a question to the website")
     if query:
         display_message("human", query)
         add_history("human", query)
-        chain = (
-            {
-                "docs": retriever,
-                "question": RunnablePassthrough(),
-            }
-            | RunnableLambda(get_answers)
-            | RunnableLambda(choose_answer)
-        )
-        # with st.chat_message("ai"):
-        result = chain.invoke(query)
-        result = result.content.replace("$", "\$")
-        display_message("ai", result)
-        add_history("ai", result)
+        with st.chat_message("ai"):
+            with st.expander("Scoring answers ..."):
+                answers = get_answers(retriever.invoke(query), query)
+            result = choose_answer(answers)
+            result = result.content.replace("$", "\$")
+            add_history("ai", result)
