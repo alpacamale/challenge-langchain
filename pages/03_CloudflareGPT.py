@@ -48,7 +48,7 @@ def load_website(url):
 
 
 def get_retriever(docs):
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(api_key=st.session_state["api_key"])
     cache_dir = (
         Path(__file__).resolve().parent / "../.cache/site_embeddings"
     ).resolve()
