@@ -11,7 +11,7 @@ from langchain.memory import ConversationBufferMemory
 from pathlib import Path
 import os
 
-page_title = "FullstackGPT Home"
+page_title = "Document GPT"
 
 st.set_page_config(
     page_title=page_title,
