@@ -119,14 +119,20 @@ choose_prompt = ChatPromptTemplate.from_messages(
 )
 
 
+def condenser(answers, metadata):
+    if metadata:
+        return "\n\n".join(
+            f"{answer['answer']}\nSource:{answer['source']}\nDate:{answer['date']}"
+            for answer in answers
+        )
+    return "\n\n".join(answer["answer"] for answer in answers)
+
+
 def choose_answer(inputs):
     answers = inputs["answers"]
     question = inputs["question"]
     choose_chain = choose_prompt | llm
-    condensed = "\n\n".join(
-        f"{answer['answer']}\nSource:{answer['source']}\nDate:{answer['date']}"
-        for answer in answers
-    )
+    condensed = condenser(answers, True)
     return choose_chain.invoke({"question": question, "answers": condensed})
 
 
@@ -135,16 +141,22 @@ if "messages" not in st.session_state:
         {
             "role": "ai",
             "message": "HI! I am assistant ai for giving you information about cloudflare!",
+            "expand_message": None,
         }
     ]
 
 
-def add_history(role: str, message: str) -> None:
-    st.session_state["messages"].append({"role": role, "message": message})
+def add_history(role: str, message: str, expand_message=None) -> None:
+    st.session_state["messages"].append(
+        {"role": role, "message": message, "expand_message": expand_message}
+    )
 
 
-def display_message(role: str, message: str):
+def display_message(role, message, expand_message=None):
     with st.chat_message(role):
+        if expand_message:
+            with st.expander("Scoring answers ..."):
+                st.write(expand_message)
         st.write(message)
 
 
@@ -213,7 +225,7 @@ else:
     with st.spinner("Embedding documents ..."):
         retriever = get_retriever(docs)
     for message in st.session_state["messages"]:
-        display_message(message["role"], message["message"])
+        display_message(message["role"], message["message"], message["expand_message"])
     query = st.chat_input("Ask a question to the website")
     if query:
         display_message("human", query)
@@ -223,4 +235,4 @@ else:
                 answers = get_answers(retriever.invoke(query), query)
             result = choose_answer(answers)
             result = result.content.replace("$", "\$")
-            add_history("ai", result)
+            add_history("ai", result, condenser(answers["answers"], False))
