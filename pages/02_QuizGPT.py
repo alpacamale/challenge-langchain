@@ -155,7 +155,8 @@ if os.environ.get("OPENAI_API_KEY") is not None:
         response = response.additional_kwargs["function_call"]["arguments"]
         response = json.loads(response)
         with st.form("questions_form"):
-            all_pass = True
+            question_count = 5
+            success_count = 0
             for question in response["questions"]:
                 st.write(question["question"])
                 value = st.radio(
@@ -166,10 +167,10 @@ if os.environ.get("OPENAI_API_KEY") is not None:
                 if value:
                     if {"answer": value, "correct": True} in question["answers"]:
                         st.success("Correct!")
+                        success_count += 1
                     else:
                         st.error("Wrong!")
-                        all_pass = False
-            if all_pass:
+            if question_count == success_count:
                 st.balloons()
             st.form_submit_button()
 
