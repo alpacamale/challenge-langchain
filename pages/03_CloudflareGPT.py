@@ -185,13 +185,13 @@ st.markdown(
 url = "https://developers.cloudflare.com/sitemap-index.xml"
 
 with st.sidebar:
-    if os.environ.get("OPENAI_API_KEY") is None:
+    if "api_key" not in st.session_state:
         api_key_input = st.text_input(
             "Enter your API key",
             type="password",
         )
         if api_key_input:
-            os.environ["OPENAI_API_KEY"] = api_key_input
+            st.session_state["api_key"] = api_key_input
             st.rerun()
     else:
         st.link_button(
@@ -199,7 +199,7 @@ with st.sidebar:
             url="https://github.com/alpacamale/challenge-langchain",
         )
 
-if os.environ.get("OPENAI_API_KEY") is None:
+if "api_key" not in st.session_state:
     st.warning("Please input your OPENAI_API_KEY")
 else:
     llm = ChatOpenAI(
@@ -207,6 +207,7 @@ else:
         model="gpt-4o-mini",
         streaming=True,
         callbacks=[ChatCallbackHandler()],
+        api_key=st.session_state["api_key"],
     )
     docs = load_website(url)
     with st.spinner("Embedding documents ..."):
