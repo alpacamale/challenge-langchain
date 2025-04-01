@@ -12,7 +12,8 @@ st.markdown(
     """
 #### Links
 
-- [DocumentGPT](pages/01_DocumentGPT.py)
-- [QuizGPT](pages/02_QuizGPT.py)
+- [DocumentGPT](DocumentGPT)
+- [QuizGPT](QuizGPT)
+- [CloudflareGPT](CloudflareGPT)
 """
 )
